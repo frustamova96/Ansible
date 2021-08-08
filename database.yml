@@ -1,0 +1,6 @@
+---
+- name: Installing mariadb Database with Gui
+  hosts: 192.168.1.167
+  become: yes
+  roles:
+    - /home/ansible/roles/feruza.mysql

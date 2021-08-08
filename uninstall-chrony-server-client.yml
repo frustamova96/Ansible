@@ -1,0 +1,65 @@
+---
+- name: Uninstall chromy server
+  hosts: ntpserver
+  become: yes
+  tasks:
+    - name: Remove NTP service from firewalld
+      firewalld:
+        service: ntp
+        state: disabled 
+        permanent: yes
+        immediate: yes
+
+    - name: Comment out IP ranges
+      lineinfile: 
+        path: "/etc/chrony.conf"
+        regexp: '^allow'
+        line: '#allow 192.168.1.0/24'
+
+    - name: Comment out local stratum
+      lineinfile:  
+        path: "/etc/chrony.conf"
+        regexp: '^local'
+        line: '#local stratum 10'
+
+    - name: Restart chronyd service
+      service: 
+        name: chronyd
+        state: restarted   
+
+- name: Remove NTP configs on a client
+  hosts: ntpclient
+  become: yes
+  vars: 
+    server_list: 
+      - 0
+      - 1
+      - 2
+      - 3
+  tasks:
+    - name: Remove single time source line
+      lineinfile: 
+        path: "/etc/chrony.conf"
+        regexp: '^server'
+        state: absent
+
+    - name: Add 4 time sources
+      lineinfile: 
+        path: "/etc/chrony.conf"
+        line: 'server {{ item }}.centos.pool.ntp.org iburst'
+      
+      ##### Providing list in variables ######
+      loop: "{{ server_list }}"
+
+      ### One Liner loop usage ####
+      #loop: "{{ [0, 1, 2, 3] }}"
+      ### Multiple line loop usage ###
+        #- 0
+        #- 1
+        #- 2
+        #- 3   
+
+    - name: Restart the service
+      service: 
+        name: chronyd
+        state: restarted 
